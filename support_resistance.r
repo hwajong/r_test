@@ -144,7 +144,7 @@ draw_resistance_line = function(data, peaks)
     yy = c(peaks$price[i], peaks$price[i])
     lines(xx, yy, lwd=2, lty='dashed', col='red');
     
-    points(peaks$date[i], peaks$price[i], lwd=5, col='black')
+    points(peaks$date[i], peaks$price[i], lwd=3, col='black')
   }  
 }
 
