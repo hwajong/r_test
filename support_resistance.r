@@ -1,22 +1,22 @@
-# µ¥ÀÌÅÍ ·Îµù
+# ë°ì´í„° ë¡œë”©
 load_data = function(fname, ndata)
 {
   data_org = read.csv(fname)  
   
-  date = data_org[[1]] # ³¯Â¥
-  price = data_org[[2]] # Á¾°¡ 
+  date = data_org[[1]] # ë‚ ì§œ
+  price = data_org[[2]] # ì¢…ê°€ 
   
-  # ÃÖ±Ù ndata °³¼ö¸¸ Ã³¸®ÇÔ
+  # ìµœê·¼ ndata ê°œìˆ˜ë§Œ ì²˜ë¦¬í•¨
   date = tail(date, ndata) 
   price = tail(price, ndata) 
-  date_d = as.Date(date, format='%Y.%m.%d') # ³¯Â¥Å¸ÀÔº¯È¯
+  date_d = as.Date(date, format='%Y.%m.%d') # ë‚ ì§œíƒ€ì…ë³€í™˜
   
   data = list("date"=date_d, "price"=price)
   
   return(data)
 }
 
-# ·ÎÄÃ °íÁ¡ Ã£±â
+# ë¡œì»¬ ê³ ì /ì €ì  ì°¾ê¸°
 find_local_peaks = function(data, delta)
 {
   date = data[["date"]]
@@ -24,6 +24,9 @@ find_local_peaks = function(data, delta)
   
   peak_date = c()
   peak_price = c()
+  
+  low_date = c()
+  low_price = c()
   
   n = length(price)
   for(i in 1:n) 
@@ -39,26 +42,36 @@ find_local_peaks = function(data, delta)
       peak_date = c(peak_date, date[i])
       peak_price = c(peak_price, price[i])
     }
+    
+    if(min(price[index_left:index_right]) == price[i])
+    {
+      #print("local low : ", str(price[i]))
+      low_date = c(low_date, date[i])
+      low_price = c(low_price, price[i])
+    }
   }
   
-  class(peak_date) = "Date" # ³¯Â¥Å¸ÀÔº¯È¯
+  class(peak_date) = "Date" # ë‚ ì§œíƒ€ì…ë³€í™˜
+  class(low_date) = "Date" # ë‚ ì§œíƒ€ì…ë³€í™˜
   
-  peaks = data.frame("date"=peak_date, "price"=peak_price)
+  peaks_high = data.frame("date"=peak_date, "price"=peak_price)
+  peaks_low = data.frame("date"=low_date, "price"=low_price)
   
-  # Á¾°¡ ±âÁØÀ¸·Î Á¤·Ä
-  peaks = peaks[order(-peaks[,2]), ]
+  # ì •ë ¬
+  peaks_high = peaks_high[order(-peaks_high[,2]), ]
+  peaks_low = peaks_low[order(-peaks_low[,2]), ]
   
-  return(peaks)
+  return(list(peaks_high, peaks_low))
 }
 
-# ºñ½ÁÇÑ °íÁ¡À» Ä«¿îÆÃ
+# ë¹„ìŠ·í•œ ê³ ì ì„ ì¹´ìš´íŒ…
 count_similar_peak = function(peaks, threshold)
 {
   date = peaks$date
   price = peaks$price
   count = rep(0, length(date))
   
-  # ºñ½ÁÇÑ °íÁ¡ Ä«¿îÆÃ
+  # ë¹„ìŠ·í•œ ê³ ì  ì¹´ìš´íŒ…
   n = length(price)
   for(i in 1:n) 
   {
@@ -73,14 +86,14 @@ count_similar_peak = function(peaks, threshold)
   
   peaks = data.frame("date"=date, "price"=price, count)
   
-  # Ä«¿îÆ® ¼øÀ¸·Î Á¤·Ä
+  # ì¹´ìš´íŠ¸ ìˆœìœ¼ë¡œ ì •ë ¬
   peaks = peaks[order(-peaks$count), ]
   
   return(peaks)
 }
 
-# ºñ½ÁÇÑ °íÁ¡ Á¦°Å
-cut_similar_peak = function(peaks, threshold)
+# ë¹„ìŠ·í•œ ê³ ì  ì œê±°
+cut_similar_peak = function(peaks, threshold, pchv)
 {
   n = length(peaks$price)
   i = 1
@@ -107,7 +120,7 @@ cut_similar_peak = function(peaks, threshold)
     }
     
     prev_color = rand_color
-    points(similar$date, similar$price, lwd=3, col=rand_color)
+    points(similar$date, similar$price, pch=pchv, lwd=2, col=rand_color)
     #points(peaks$date[i], peaks$price[i], lwd=10, col=rand_color)
 
     print(sum(c))
@@ -121,65 +134,73 @@ cut_similar_peak = function(peaks, threshold)
     i = i + 1
   }
   
-  # count > NTREND_THRESHOLD ÀÎ °¡°İÀÌ ÀúÇ×¼±
+  # count > NTREND_THRESHOLD ì¸ ê°€ê²©ì´ ì €í•­ì„ 
   peaks = peaks[peaks$count >= NTREND_THRESHOLD, ]  
   
   return(peaks)
 }
 
-# Â÷Æ® ±×¸®±â
+# ì°¨íŠ¸ ê·¸ë¦¬ê¸°
 draw_chart = function(data)
 {
   plot(data[["date"]], data[["price"]], type="l", lwd = 1, col="blue", xlab="Date", ylab="Price")
   grid()  
 }
 
-# ÀúÇ×¼± ±×¸®±â
-draw_resistance_line = function(data, peaks)
+# ì €í•­ì„  ê·¸ë¦¬ê¸°
+draw_resistance_line = function(data, peaks, colo)
 {
   n = length(peaks$price)
   xx = c(data[["date"]][1], data[["date"]][length(data[["date"]])])
   for(i in 1:n)
   {
     yy = c(peaks$price[i], peaks$price[i])
-    lines(xx, yy, lwd=2, lty='dashed', col='red');
+    lines(xx, yy, lwd=2, lty='dashed', col=colo);
     
-    points(peaks$date[i], peaks$price[i], lwd=3, col='black')
+    points(peaks$date[i], peaks$price[i], pch=19, lwd=2, col=colo)
   }  
 }
 
 #########################################################################
-# ¼³Á¤ÇÒ ÆÄ¶ó¹ÌÅÍ
-NDATA = 300 # Ã³¸®ÇÒ µ¥ÀÌÅÍ °³¼ö
-LDELTA = 2  # ·ÎÄÃ °íÁ¡ Ã£À»¶§ ÁÂ¿ì °Ë»ö µ¥ÀÌÅÍ °³¼ö
-SIMILAR_PERCENT = 0.05 # ºñ½ÁÇÑ °íÁ¡À» Ã£À»¶§ÀÇ ±âÁØ +- Â÷ÀÌ°ª ºñÀ²
-NTREND_THRESHOLD = 5  # ÀúÇ×¼± ÆÇ´Ü ±âÁØ(ºñ½ÁÇÑ °íÁ¡ÀÌ ¸î°³ÀÌ»ó ÀÏ¶§)
+# ì„¤ì •í•  íŒŒë¼ë¯¸í„°
+NDATA = 300 # ì²˜ë¦¬í•  ë°ì´í„° ê°œìˆ˜
+LDELTA = 3  # ë¡œì»¬ ê³ ì  ì°¾ì„ë•Œ ì¢Œìš° ê²€ìƒ‰ ë°ì´í„° ê°œìˆ˜
+SIMILAR_PERCENT = 0.05 # ë¹„ìŠ·í•œ ê³ ì ì„ ì°¾ì„ë•Œì˜ ê¸°ì¤€ +- ì°¨ì´ê°’ ë¹„ìœ¨
+NTREND_THRESHOLD = 5  # ì €í•­ì„  íŒë‹¨ ê¸°ì¤€(ë¹„ìŠ·í•œ ê³ ì ì´ ëª‡ê°œì´ìƒ ì¼ë•Œ)
 
-# µ¥ÀÌÅÍ ·Îµù
-data = load_data('ÇÏÀÌ¼Ò´Ğ(106080).txt', NDATA)
+# ë°ì´í„° ë¡œë”©
+data = load_data('í•˜ì´ì†Œë‹‰(106080).txt', NDATA)
 
-# Â÷Æ® ±×¸®±â
+# ì°¨íŠ¸ ê·¸ë¦¬ê¸°
 draw_chart(data)
 
-# ·ÎÄÃ °íÁ¡ Ã£±â
-peaks_local = find_local_peaks(data, LDELTA)
+# ë¡œì»¬ ê³ ì /ì €ì  ì°¾ê¸°
+peaks_list = find_local_peaks(data, LDELTA)
 
-# ·ÎÄÃ °íÁ¡ Ç¥½Ã
-points(peaks_local$date, peaks_local$price, lwd=2, col="#BBBBBB")
+peaks_local = peaks_list[[1]]
+peaks_low_local = peaks_list[[2]]
 
-# ºñ½ÁÇÑ °íÁ¡ Ä«¿îÆÃ
+# ë¡œì»¬ ê³ ì /ì €ì  í‘œì‹œ
+points(peaks_local$date, peaks_local$price, pch=2, lwd=1, col="#BBBBBB")
+points(peaks_low_local$date, peaks_low_local$price, pch=6, lwd=1, col="#BBBBBB")
+
+# ë¹„ìŠ·í•œ ê³ ì  ì¹´ìš´íŒ…
 peaks_local = count_similar_peak(peaks_local, SIMILAR_PERCENT)
+peaks_low_local = count_similar_peak(peaks_low_local, SIMILAR_PERCENT)
 
-# ºñ½ÁÇÑ °íÁ¡ Á¦°Å & ºñ½ÁÇÑ °íÁ¡ Ç¥½Ã
-peaks_uniq = cut_similar_peak(peaks_local, SIMILAR_PERCENT)
+# ë¹„ìŠ·í•œ ê³ ì  ì œê±° & ë¹„ìŠ·í•œ ê³ ì  í‘œì‹œ
+peaks_uniq = cut_similar_peak(peaks_local, SIMILAR_PERCENT, 2)
+peaks_low_uniq = cut_similar_peak(peaks_low_local, SIMILAR_PERCENT, 6)
 
-# ÀúÇ×¼± ±×¸®±â
-draw_resistance_line(data, peaks_uniq)
+# ì €í•­ì„ /ì§€ì§€ì„  ê·¸ë¦¬ê¸°
+draw_resistance_line(data, peaks_uniq, "red")
+draw_resistance_line(data, peaks_low_uniq, "blue")
 
 print(peaks_uniq)
+print(peaks_low_uniq)
 
 ####### TODO 
-# ÀúÇ×¼± °¡°İ Ç¥½Ã
+# ì €í•­ì„  ê°€ê²© í‘œì‹œ
 
 
 
