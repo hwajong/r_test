@@ -1,22 +1,22 @@
-# ë°ì´í„° ë¡œë”©
+# µ¥ÀÌÅÍ ·Îµù
 load_data = function(fname, ndata)
 {
   data_org = read.csv(fname)  
   
-  date = data_org[[1]] # ë‚ ì§œ
-  price = data_org[[2]] # ì¢…ê°€ 
+  date = data_org[[1]] # ³¯Â¥
+  price = data_org[[2]] # Á¾°¡ 
   
-  # ìµœê·¼ ndata ê°œìˆ˜ë§Œ ì²˜ë¦¬í•¨
+  # ÃÖ±Ù ndata °³¼ö¸¸ Ã³¸®ÇÔ
   date = tail(date, ndata) 
   price = tail(price, ndata) 
-  date_d = as.Date(date, format='%Y.%m.%d') # ë‚ ì§œíƒ€ì…ë³€í™˜
+  date_d = as.Date(date, format='%Y.%m.%d') # ³¯Â¥Å¸ÀÔº¯È¯
   
   data = list("date"=date_d, "price"=price)
   
   return(data)
 }
 
-# ë¡œì»¬ ê³ ì /ì €ì  ì°¾ê¸°
+# ·ÎÄÃ °íÁ¡/ÀúÁ¡ Ã£±â
 find_local_peaks = function(data, delta)
 {
   date = data[["date"]]
@@ -51,27 +51,27 @@ find_local_peaks = function(data, delta)
     }
   }
   
-  class(peak_date) = "Date" # ë‚ ì§œíƒ€ì…ë³€í™˜
-  class(low_date) = "Date" # ë‚ ì§œíƒ€ì…ë³€í™˜
+  class(peak_date) = "Date" # ³¯Â¥Å¸ÀÔº¯È¯
+  class(low_date) = "Date" # ³¯Â¥Å¸ÀÔº¯È¯
   
   peaks_high = data.frame("date"=peak_date, "price"=peak_price)
   peaks_low = data.frame("date"=low_date, "price"=low_price)
   
-  # ì •ë ¬
+  # Á¤·Ä
   peaks_high = peaks_high[order(-peaks_high[,2]), ]
   peaks_low = peaks_low[order(-peaks_low[,2]), ]
   
   return(list(peaks_high, peaks_low))
 }
 
-# ë¹„ìŠ·í•œ ê³ ì ì„ ì¹´ìš´íŒ…
+# ºñ½ÁÇÑ °íÁ¡À» Ä«¿îÆÃ
 count_similar_peak = function(peaks, threshold)
 {
   date = peaks$date
   price = peaks$price
   count = rep(0, length(date))
   
-  # ë¹„ìŠ·í•œ ê³ ì  ì¹´ìš´íŒ…
+  # ºñ½ÁÇÑ °íÁ¡ Ä«¿îÆÃ
   n = length(price)
   for(i in 1:n) 
   {
@@ -86,13 +86,13 @@ count_similar_peak = function(peaks, threshold)
   
   peaks = data.frame("date"=date, "price"=price, count)
   
-  # ì¹´ìš´íŠ¸ ìˆœìœ¼ë¡œ ì •ë ¬
+  # Ä«¿îÆ® ¼øÀ¸·Î Á¤·Ä
   peaks = peaks[order(-peaks$count), ]
   
   return(peaks)
 }
 
-# ë¹„ìŠ·í•œ ê³ ì  ì œê±°
+# ºñ½ÁÇÑ °íÁ¡ Á¦°Å
 cut_similar_peak = function(peaks, threshold, pchv)
 {
   n = length(peaks$price)
@@ -134,20 +134,20 @@ cut_similar_peak = function(peaks, threshold, pchv)
     i = i + 1
   }
   
-  # count > NTREND_THRESHOLD ì¸ ê°€ê²©ì´ ì €í•­ì„ 
+  # count > NTREND_THRESHOLD ÀÎ °¡°İÀÌ ÀúÇ×¼±
   peaks = peaks[peaks$count >= NTREND_THRESHOLD, ]  
   
   return(peaks)
 }
 
-# ì°¨íŠ¸ ê·¸ë¦¬ê¸°
+# Â÷Æ® ±×¸®±â
 draw_chart = function(data)
 {
   plot(data[["date"]], data[["price"]], type="l", lwd = 1, col="blue", xlab="Date", ylab="Price")
   grid()  
 }
 
-# ì €í•­ì„  ê·¸ë¦¬ê¸°
+# ÀúÇ×¼± ±×¸®±â
 draw_resistance_line = function(data, peaks, colo)
 {
   n = length(peaks$price)
@@ -162,37 +162,37 @@ draw_resistance_line = function(data, peaks, colo)
 }
 
 #########################################################################
-# ì„¤ì •í•  íŒŒë¼ë¯¸í„°
-NDATA = 300 # ì²˜ë¦¬í•  ë°ì´í„° ê°œìˆ˜
-LDELTA = 3  # ë¡œì»¬ ê³ ì  ì°¾ì„ë•Œ ì¢Œìš° ê²€ìƒ‰ ë°ì´í„° ê°œìˆ˜
-SIMILAR_PERCENT = 0.05 # ë¹„ìŠ·í•œ ê³ ì ì„ ì°¾ì„ë•Œì˜ ê¸°ì¤€ +- ì°¨ì´ê°’ ë¹„ìœ¨
-NTREND_THRESHOLD = 5  # ì €í•­ì„  íŒë‹¨ ê¸°ì¤€(ë¹„ìŠ·í•œ ê³ ì ì´ ëª‡ê°œì´ìƒ ì¼ë•Œ)
+# ¼³Á¤ÇÒ ÆÄ¶ó¹ÌÅÍ
+NDATA = 300 # Ã³¸®ÇÒ µ¥ÀÌÅÍ °³¼ö
+LDELTA = 3  # ·ÎÄÃ °íÁ¡ Ã£À»¶§ ÁÂ¿ì °Ë»ö µ¥ÀÌÅÍ °³¼ö
+SIMILAR_PERCENT = 0.05 # ºñ½ÁÇÑ °íÁ¡À» Ã£À»¶§ÀÇ ±âÁØ +- Â÷ÀÌ°ª ºñÀ²
+NTREND_THRESHOLD = 5  # ÀúÇ×¼± ÆÇ´Ü ±âÁØ(ºñ½ÁÇÑ °íÁ¡ÀÌ ¸î°³ÀÌ»ó ÀÏ¶§)
 
-# ë°ì´í„° ë¡œë”©
-data = load_data('í•˜ì´ì†Œë‹‰(106080).txt', NDATA)
+# µ¥ÀÌÅÍ ·Îµù
+data = load_data('ÇÏÀÌ¼Ò´Ğ(106080).txt', NDATA)
 
-# ì°¨íŠ¸ ê·¸ë¦¬ê¸°
+# Â÷Æ® ±×¸®±â
 draw_chart(data)
 
-# ë¡œì»¬ ê³ ì /ì €ì  ì°¾ê¸°
+# ·ÎÄÃ °íÁ¡/ÀúÁ¡ Ã£±â
 peaks_list = find_local_peaks(data, LDELTA)
 
 peaks_local = peaks_list[[1]]
 peaks_low_local = peaks_list[[2]]
 
-# ë¡œì»¬ ê³ ì /ì €ì  í‘œì‹œ
+# ·ÎÄÃ °íÁ¡/ÀúÁ¡ Ç¥½Ã
 points(peaks_local$date, peaks_local$price, pch=2, lwd=1, col="#BBBBBB")
 points(peaks_low_local$date, peaks_low_local$price, pch=6, lwd=1, col="#BBBBBB")
 
-# ë¹„ìŠ·í•œ ê³ ì  ì¹´ìš´íŒ…
+# ºñ½ÁÇÑ °íÁ¡ Ä«¿îÆÃ
 peaks_local = count_similar_peak(peaks_local, SIMILAR_PERCENT)
 peaks_low_local = count_similar_peak(peaks_low_local, SIMILAR_PERCENT)
 
-# ë¹„ìŠ·í•œ ê³ ì  ì œê±° & ë¹„ìŠ·í•œ ê³ ì  í‘œì‹œ
+# ºñ½ÁÇÑ °íÁ¡ Á¦°Å & ºñ½ÁÇÑ °íÁ¡ Ç¥½Ã
 peaks_uniq = cut_similar_peak(peaks_local, SIMILAR_PERCENT, 2)
 peaks_low_uniq = cut_similar_peak(peaks_low_local, SIMILAR_PERCENT, 6)
 
-# ì €í•­ì„ /ì§€ì§€ì„  ê·¸ë¦¬ê¸°
+# ÀúÇ×¼±/ÁöÁö¼± ±×¸®±â
 draw_resistance_line(data, peaks_uniq, "red")
 draw_resistance_line(data, peaks_low_uniq, "blue")
 
@@ -200,7 +200,7 @@ print(peaks_uniq)
 print(peaks_low_uniq)
 
 ####### TODO 
-# ì €í•­ì„  ê°€ê²© í‘œì‹œ
+# ÀúÇ×¼± °¡°İ Ç¥½Ã
 
 
 
